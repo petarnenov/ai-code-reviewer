@@ -128,7 +128,7 @@ async function getAIResponse(prompt: string): Promise<Array<{
       ...queryConfig,
       // return JSON if the model supports it:
      // ...(OPENAI_API_MODEL === "gpt-4-1106-preview"
-         ...(OPENAI_API_MODEL === "gpt-4o-mini"
+         ...(OPENAI_API_MODEL === "gpt-4-turbo"
         ? { response_format: { type: "json_object" } }
         : {}),
       messages: [
