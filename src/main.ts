@@ -56,6 +56,32 @@ async function getDiff(
   return response.data;
 }
 
+async function downloadFile(owner: string, repo: string, path: string): Promise<string> {
+  let content=''
+  try {
+        // Fetch the file content from the repository
+    const { data } = await octokit.repos.getContent({
+      owner,
+      repo,
+      path
+    });
+
+    if (data && 'content' in data) {
+      // Decode the base64 content
+      content = Buffer.from(data.content, 'base64').toString('utf-8');
+
+      // Save the content to a file
+      console.log('File downloaded successfully');
+    } else {
+      console.error('Failed to fetch file content');
+    }
+  } catch (error) {
+    console.error('Error downloading file:', error);
+  } finally {
+    return content;
+  }
+}
+
 async function analyzeCode(
   parsedDiff: File[],
   prDetails: PRDetails
@@ -64,8 +90,10 @@ async function analyzeCode(
 
   for (const file of parsedDiff) {
     if (file.to === "/dev/null") continue; // Ignore deleted files
+    core.info(`Analyzing file: ${file}`);
+    //const fileContent = await downloadFile(prDetails.owner, prDetails.repo, file.to);
     for (const chunk of file.chunks) {
-      const prompt = createPrompt(file, chunk, prDetails);
+      const prompt = createPrompt(file, chunk, prDetails, 'file content');
       core.info(prompt);
       const aiResponse = await getAIResponse(prompt);
       if (aiResponse) {
@@ -79,7 +107,7 @@ async function analyzeCode(
   return comments;
 }
 
-function createPrompt(file: File, chunk: Chunk, prDetails: PRDetails): string {
+function createPrompt(file: File, chunk: Chunk, prDetails: PRDetails, fileContent: string): string {
   return `Your task is to review pull requests. Instructions:
 - Check for code quality, security, and performance issues.
 - Provide the response in following JSON format:  {"reviews": [{"lineNumber":  <line_number>, "reviewComment": "<review comment>"}]}
@@ -99,6 +127,12 @@ Pull request description:
 ---
 ${prDetails.description}
 ---
+
+File content:
+
+\`\`\`
+${fileContent}
+\`\`\`
 
 Git diff to review:
 
