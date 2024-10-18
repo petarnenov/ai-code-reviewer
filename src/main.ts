@@ -90,10 +90,10 @@ async function analyzeCode(
 
   for (const file of parsedDiff) {
     if (file.to === "/dev/null") continue; // Ignore deleted files
-    core.info(`Analyzing file: ${JSON.stringify(file)}`);
-    //const fileContent = await downloadFile(prDetails.owner, prDetails.repo, file.to);
+    core.info(`Analyzing file: ${JSON.stringify(file.to)}`);
+    const fileContent = await downloadFile(prDetails.owner, prDetails.repo, file.to!);
     for (const chunk of file.chunks) {
-      const prompt = createPrompt(file, chunk, prDetails, 'file content ...');
+      const prompt = createPrompt(file, chunk, prDetails, fileContent);
       core.info(prompt);
       const aiResponse = await getAIResponse(prompt);
       if (aiResponse) {
