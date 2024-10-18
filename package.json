@@ -6,7 +6,7 @@
   "author": "Ville Saukkonen",
   "license": "MIT",
   "scripts": {
-    "build": "rm -rf ./dist && rm -rf ./lib && tsc npm run package",
+    "build": "rm -rf ./dist && rm -rf ./lib && tsc && npm run package",
     "package": "ncc build --source-map --license licenses.txt",
     "format": "prettier --write .",
     "lint": "prettier --check ."
