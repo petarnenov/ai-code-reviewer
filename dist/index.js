@@ -85,14 +85,44 @@ function getDiff(owner, repo, pull_number) {
         return response.data;
     });
 }
+function downloadFile(owner, repo, path) {
+    return __awaiter(this, void 0, void 0, function* () {
+        let content = '';
+        try {
+            // Fetch the file content from the repository
+            const { data } = yield octokit.repos.getContent({
+                owner,
+                repo,
+                path
+            });
+            if (data && 'content' in data) {
+                // Decode the base64 content
+                content = Buffer.from(data.content, 'base64').toString('utf-8');
+                // Save the content to a file
+                console.log('File downloaded successfully');
+            }
+            else {
+                console.error('Failed to fetch file content');
+            }
+        }
+        catch (error) {
+            console.error('Error downloading file:', error);
+        }
+        finally {
+            return content;
+        }
+    });
+}
 function analyzeCode(parsedDiff, prDetails) {
     return __awaiter(this, void 0, void 0, function* () {
         const comments = [];
         for (const file of parsedDiff) {
             if (file.to === "/dev/null")
                 continue; // Ignore deleted files
+            core.info(`Analyzing file: ${file}`);
+            //const fileContent = await downloadFile(prDetails.owner, prDetails.repo, file.to);
             for (const chunk of file.chunks) {
-                const prompt = createPrompt(file, chunk, prDetails);
+                const prompt = createPrompt(file, chunk, prDetails, 'file content');
                 core.info(prompt);
                 const aiResponse = yield getAIResponse(prompt);
                 if (aiResponse) {
@@ -106,7 +136,7 @@ function analyzeCode(parsedDiff, prDetails) {
         return comments;
     });
 }
-function createPrompt(file, chunk, prDetails) {
+function createPrompt(file, chunk, prDetails, fileContent) {
     return `Your task is to review pull requests. Instructions:
 - Check for code quality, security, and performance issues.
 - Provide the response in following JSON format:  {"reviews": [{"lineNumber":  <line_number>, "reviewComment": "<review comment>"}]}
@@ -124,6 +154,12 @@ Pull request description:
 ---
 ${prDetails.description}
 ---
+
+File content:
+
+\`\`\`
+${fileContent}
+\`\`\`
 
 Git diff to review:
 
